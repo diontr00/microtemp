@@ -1,0 +1,22 @@
+[hello] 
+  other = "Xin chao tu Service API"
+
+[notfound-Error]
+  other = "trường {{.Method}} cho {{.Route}} không được hỗ trợ"
+
+
+[unauthorized-Error] 
+  other = "bạn không được phép thực hiện thao tác này"
+
+[internal-Error] 
+  other = "lỗi máy chủ nội bộ, vui lòng thử lại sau"
+
+[badrequest-Error] 
+  other = "{{.Reason}}"
+
+[methodnotallow-error] 
+  other = "Method {{.Method}} cho {{.Route}} khong duoc phep" 
+
+[required] 
+  other = "la truong bat buoc"
+
