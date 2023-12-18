@@ -6,13 +6,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"io"
 	oslog "log"
+	"os"
+	"os/signal"
 	"{{{mytemplate}}}/config/env"
 	"{{{mytemplate}}}/config/setup"
 	"{{{mytemplate}}}/rest"
 	"{{{mytemplate}}}/translator"
 	"{{{mytemplate}}}/validator"
-	"os"
-	"os/signal"
 )
 
 type Applications struct {

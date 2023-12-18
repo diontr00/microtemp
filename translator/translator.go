@@ -6,18 +6,18 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/text/language"
 	"io/fs"
-	"{{{mytemplate}}}/model"
 	"path/filepath"
+	"{{{mytemplate}}}/model"
 )
 
-// Translate parameter e.g {count : 3}
+// Translate parameter that will be supplied to dictionary file, e.g: required "This field is required, plese supplied"
 type TranslateParam map[string]interface{}
 
 type Translator interface {
 	// Translate Arbitrary message
-	TranslateMessage(lang string, key string, param TranslateParam, plurals interface{}) string
-	// Validate struct fileds validation error helper
-	TranslateRequest(lang string, field model.FieldError) string
+	TranslateMessage(lang string, key string, param TranslateParam, plurals interface{}) (string, error)
+	// Use with Validator to translate valifdation error to other locale or more meaningful error
+	TranslateFieldError(lang string, field model.FieldError) (string, error)
 }
 
 type uTtrans struct {
@@ -25,34 +25,46 @@ type uTtrans struct {
 	bundle *i18n.Bundle
 }
 
+// return walkdir function that load messsage file to locale bundle
+func newloadMessageFile(f embed.FS, bundle *i18n.Bundle) func(path string, di fs.DirEntry, err error) error {
+	return func(path string, di fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if di.IsDir() {
+			return nil
+		}
+		_, err = bundle.LoadMessageFileFS(f, path)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+// return new translator when setup this server, when return error is not nil
+// you should panic
 func New(fs embed.FS, transFolderName string) (Translator, error) {
 	bundle := i18n.NewBundle(language.English)
 
 	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
-	dirs, err := fs.ReadDir(transFolderName)
-	if err != nil {
 
+	loadMessage := newloadMessageFile(fs, bundle)
+	err := filepath.WalkDir(transFolderName, loadMessage)
+	if err != nil {
 		return nil, err
 	}
 
-	for _, file := range dirs {
-		file_path := filepath.Join(transFolderName, file.Name())
-
-		_, err = bundle.LoadMessageFileFS(fs, file_path)
-		if err != nil {
-			return nil, err
-
-		}
-	}
-
-	return &uTtrans{bundle: bundle}, err
+	return &uTtrans{bundle: bundle}, nil
 }
 
-func (u *uTtrans) TranslateRequest(
+func (u *uTtrans) TranslateFieldError(
 	lang string,
 	fe model.FieldError,
-) string {
+) (string, error) {
 
+	// message localizer with message bundle have been setup
 	localizer := i18n.NewLocalizer(u.bundle, lang)
 
 	message, err := localizer.Localize(&i18n.LocalizeConfig{
@@ -64,10 +76,10 @@ func (u *uTtrans) TranslateRequest(
 		PluralCount: nil,
 	})
 	if err != nil {
-		return "Error Translate Message , Refer to the documentaion"
+		return "", err
 	}
 
-	return message
+	return message, nil
 }
 
 // Translate message with associated key , plurals define the plurals variable that determine more than one form
@@ -76,7 +88,7 @@ func (u *uTtrans) TranslateMessage(
 	key string,
 	para TranslateParam,
 	plurals interface{},
-) string {
+) (string, error) {
 	localizer := i18n.NewLocalizer(u.bundle, lang)
 	message, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID:    key,
@@ -84,7 +96,7 @@ func (u *uTtrans) TranslateMessage(
 		PluralCount:  plurals,
 	})
 	if err != nil {
-		return "Error TranslateMessage"
+		return "", err
 	}
-	return message
+	return message, nil
 }
