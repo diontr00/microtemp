@@ -16,8 +16,9 @@ type TranslateParam map[string]interface{}
 type Translator interface {
 	// Translate Arbitrary message
 	TranslateMessage(lang string, key string, param TranslateParam, plurals interface{}) (string, error)
-	// Use with Validator to translate valifdation error to other locale or more meaningful error
+	// Use with Validator to translate validation error to other locale or more meaningful error
 	TranslateFieldError(lang string, field model.FieldError) (string, error)
+	TranslateErrorLogger(logger *zerolog.Logger) func(key string, err error)
 }
 
 type uTtrans struct {
@@ -80,6 +81,13 @@ func (u *uTtrans) TranslateFieldError(
 	}
 
 	return message, nil
+}
+
+func (u *uTtrans) TranslateErrorLogger(logger *zerolog.Logger) func(key string, err error) {
+	return func(key string, err error) {
+		logger.Error().AnErr(key, err).Msg("Translate")
+
+	}
 }
 
 // Translate message with associated key , plurals define the plurals variable that determine more than one form

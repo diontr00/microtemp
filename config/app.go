@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 	"io"
 	oslog "log"
 	"os"
@@ -28,8 +29,6 @@ func (a *Applications) Start() {
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)
 
-	logger := a.Rest.GetGlobalLogger()
-
 	go func() {
 		<-terminate
 		fmt.Printf("Gratefully Shutdown %s , Doing Cleanup Task...😷 \n", a.Env.App.AppName)
@@ -45,13 +44,13 @@ func (a *Applications) Start() {
 		}()
 		if err := a.Rest.Shutdown(ctx); err != nil {
 
-			logger.Fatal().Err(err).Msg("❌ Shut down error")
+			log.Fatal().Err(err).Msg("❌ Shut down error")
 		}
 	}()
 
 	err := a.Rest.Listen(a.Env.App.ListenPort)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("❌ Shut listen error")
+		log.Fatal().Err(err).Msg("❌ Shut listen error")
 	}
 
 }
@@ -61,11 +60,10 @@ func NewApp(ctx context.Context) *Applications {
 	app.Translator = setup.NewTranslator()
 	env := env.NewEnv(ctx)
 	app.Env = env
-	app.Validator = setup.NewValidator(app.Translator)
 	logger, logfile := setup.NewLogger(app.Env)
 	app.Logfile = logfile
+	app.Validator = setup.NewValidator(app.Translator, &logger)
 	app.Rest = setup.NewRest(env, app.Translator, &logger)
-	app.Rest.SetGlobalLogger(&logger)
 
 	return app
 }

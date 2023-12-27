@@ -1,5 +1,6 @@
 package model
 
+// use within translate to translate  request payload
 type FieldError interface {
 	// Return the validation tag that failed for example "required or lt"
 	Tag() string
@@ -9,7 +10,8 @@ type FieldError interface {
 	Param() string
 }
 
-type RequestError struct {
-	Field string `json:"field"`
-	Msg   string `json:"error_msg"`
+// Request Error Response
+type ErrorResponse struct {
+	Field string `json:"field,omitempty"`
+	Error string `json:"error"`
 }

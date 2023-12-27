@@ -1,14 +1,14 @@
 package setup
 
 import (
-	"{{{mytemplate}}}/config/env"
-	"{{{mytemplate}}}/json"
-	"{{{mytemplate}}}/rest"
-	"{{{mytemplate}}}/translator"
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
+	"net/http"
+	"{{{mytemplate}}}/config/env"
+	"{{{mytemplate}}}/json"
+	"{{{mytemplate}}}/model"
+	"{{{mytemplate}}}/rest"
+	"{{{mytemplate}}}/translator"
 )
 
 func NewRest(config *env.Env, trans translator.Translator, logger *zerolog.Logger) rest.RestServer[echo.Context] {
@@ -47,45 +47,63 @@ func newErrrHandler(trans translator.Translator, logger *zerolog.Logger) func(er
 			detail = he.Message
 		}
 
-		type JSON map[string]string
+		var msg string
+		logTransErr := trans.TranslateErrorLogger(logger)
 
-		var e error
 		switch code {
 		case http.StatusNotFound:
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "notfound-Error", translator.TranslateParam{
+
+			msg, err = trans.TranslateMessage(locale, "Notfound-Error", translator.TranslateParam{
 				"Method": c.Request().Method,
 				"Route":  c.Request().URL.Path,
-			}, nil)})
+			}, nil)
 
-			logger.Info().Err(err).Send()
+			if err != nil {
+				logger.Warn().AnErr("Notfound-Error", err).Msg("Translate Message")
+				logTransErr("notfound-Error", err)
+				msg = "Not Found"
+
+			}
 
 		case http.StatusUnauthorized:
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "unauthorized-Error", nil, nil)})
-			logger.Info().Err(err).Send()
-
-		case http.StatusInternalServerError:
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "internal-Error", nil, nil)})
+			msg, err = trans.TranslateMessage(locale, "Unauthorized-Error", nil, nil)
+			if err != nil {
+				logTransErr("Unauthorized-Error", err)
+				msg = "Unauthorized"
+			}
 
 		case http.StatusBadRequest:
-			//
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "badrequest-Error", translator.TranslateParam{"Reason": detail}, nil)})
-			logger.Info().Err(err).Send()
+
+			msg, err = trans.TranslateMessage(locale, "badrequest-Error", translator.TranslateParam{"Reason": detail}, nil)
+			if err != nil {
+				logTransErr("Badrequest-Error", err)
+				msg = "Bad Request"
+
+			}
 
 		case http.StatusMethodNotAllowed:
 
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "methodnotallow-error", translator.TranslateParam{
+			msg, err = trans.TranslateMessage(locale, "Notallowed-Error", translator.TranslateParam{
 				"Method": c.Request().Method,
 				"Route":  c.Request().URL.Path,
-			}, nil)})
+			}, nil)
+			if err != nil {
+				logTransErr("Notallowed-Error", err)
+				msg = "Not Allowed"
+			}
 
 		default:
-			e = c.JSON(code, JSON{"error": trans.TranslateMessage(locale, "internal-Error", nil, nil)})
-
-			logger.Error().Err(err).Msg("Un-handle error")
+			msg, err = trans.TranslateMessage(locale, "Internal-Error", nil, nil)
+			if err != nil {
+				logTransErr("internal-Error", err)
+				msg = "Internal"
+			}
 
 		}
+
+		e := c.JSON(code, model.ErrorResponse{Error: msg})
 		if e != nil {
-			c.Logger().Error(e)
+			logger.Err(e).Send()
 		}
 
 	}

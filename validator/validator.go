@@ -10,14 +10,15 @@ import (
 type Validator interface {
 	//  internal validation of struct for request body
 	validateStruct(i interface{}) []model.FieldError
-	// validate any agains particular tag
-	ValidateAndTranslateAny(lang string, i interface{}, tag string) []model.FieldErrorResponse
+	// validate i against particular tag
+	ValidateAndTranslateAny(lang string, i interface{}, tag string) []model.ErrorResponse
 	// validate request body and translate the error if exist according to specify locale
-	ValidateRequestAndTranslate(lang string, i interface{}) []model.FieldErrorResponse
+	ValidateRequestAndTranslate(lang string, i interface{}) []model.ErrorResponse
 }
 
 // validator that support i18n
 type validatorWithTrans struct {
+	logger    *zerolog.Logger
 	trans     translator.Translator
 	validator *validator.Validate
 }
@@ -37,20 +38,20 @@ func (v *validatorWithTrans) validateStruct(i interface{}) []model.FieldError {
 	return nil
 }
 
-func (v *validatorWithTrans) ValidateRequestAndTranslate(lang string, i interface{}) []model.FieldErrorResponse {
-	var return_err []model.FieldErrorResponse
+func (v *validatorWithTrans) ValidateRequestAndTranslate(lang string, i interface{}) []model.ErrorResponse {
+	var return_err []model.ErrorResponse
 	errs := v.validateStruct(i)
 	if errs != nil {
 		for _, e := range errs {
 			msg, err := v.trans.TranslateFieldError(lang, e)
-			var errMsg model.FieldErrorResponse
+			var errMsg model.ErrorResponse
 
 			if err != nil {
+				v.trans.TranslateErrorLogger(v.logger)(e.Field(), err)
 
-				log.Err(err).Msgf("Couldn't translate error when validation into %s", lang)
-				errMsg = model.FieldErrorResponse{Field: e.Field(), Msg: "[error]"}
+				errMsg = model.ErrorResponse{Field: e.Field(), Error: "please check the documentation"}
 			} else {
-				errMsg = model.FieldErrorResponse{Field: e.Field(), Msg: msg}
+				errMsg = model.ErrorResponse{Field: e.Field(), Error: msg}
 			}
 			return_err = append(return_err, errMsg)
 
@@ -77,21 +78,23 @@ func (v *validatorWithTrans) validateAny(i interface{}, tag string) []model.Fiel
 }
 
 // helper to manuallty validate interface against any tag
-func (v *validatorWithTrans) ValidateAndTranslateAny(lang string, i interface{}, tag string) []model.FieldErrorResponse {
-	var return_err []model.FieldErrorResponse
+func (v *validatorWithTrans) ValidateAndTranslateAny(lang string, i interface{}, tag string) []model.ErrorResponse {
+	var return_err []model.ErrorResponse
 	errs := v.validateAny(i, tag)
 
 	if errs != nil {
 		for _, e := range errs {
 			msg, err := v.trans.TranslateFieldError(lang, e)
 
-			var errMsg model.FieldErrorResponse
+			var errMsg model.ErrorResponse
 			if err != nil {
-				log.Err(err).Msgf("Couldn't translate error when validation into %s", lang)
 
-				errMsg = model.FieldErrorResponse{Field: e.Field(), Msg: "[error]"}
+				v.trans.TranslateErrorLogger(v.logger)(e.Field(), err)
+
+				errMsg = model.ErrorResponse{Field: e.Field(), Error: "please check the documentation"}
+
 			} else {
-				errMsg = model.FieldErrorResponse{Field: e.Field(), Msg: msg}
+				errMsg = model.ErrorResponse{Field: e.Field(), Error: msg}
 			}
 			return_err = append(return_err, errMsg)
 
@@ -101,8 +104,9 @@ func (v *validatorWithTrans) ValidateAndTranslateAny(lang string, i interface{},
 	return nil
 }
 
-func New(trans translator.Translator) Validator {
+func New(trans translator.Translator, logger *zerolog.Logger) Validator {
 	return &validatorWithTrans{
+		logger:    logger,
 		validator: validator.New(),
 		trans:     trans,
 	}

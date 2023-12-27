@@ -1,20 +1,20 @@
 [hello] 
   other = "Xin chao tu Service API"
 
-[notfound-Error]
+[Notfound-Error]
   other = "trường {{.Method}} cho {{.Route}} không được hỗ trợ"
 
 
-[unauthorized-Error] 
+[Unauthorized-Error] 
   other = "bạn không được phép thực hiện thao tác này"
 
-[internal-Error] 
+[Internal-Error] 
   other = "lỗi máy chủ nội bộ, vui lòng thử lại sau"
 
-[badrequest-Error] 
+[Badrequest-Error] 
   other = "{{.Reason}}"
 
-[methodnotallow-error] 
+[Notallowed-Error] 
   other = "Method {{.Method}} cho {{.Route}} khong duoc phep" 
 
 [required] 

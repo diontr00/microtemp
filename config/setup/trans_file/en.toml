@@ -1,19 +1,19 @@
 [hello] 
   other = "Hello From Service API"
 
-[notfound-Error]
+[Notfound-Error]
   other = "{{.Method}} cho {{.Route}} is not supported"
 
-[unauthorized-Error] 
+[Unauthorized-Error] 
   other = "You are not authorized to perform following operation"
 
-[internal-Error] 
+[Internal-Error] 
   other = "Internal error , please try again"
 
-[badrequest-Error] 
+[Badrequest-Error] 
   other = "{{.Reason}}"
 
-[methodnotallow-error] 
+[Notallowed-Error] 
   other = "Method {{.Method}} for {{.Route}} is not allowed" 
 
 [required] 

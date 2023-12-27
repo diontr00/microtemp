@@ -3,8 +3,8 @@ package rest
 import (
 	"context"
 	"log"
-	"{{{mytemplate}}}/json"
 	"time"
+	"{{{mytemplate}}}/json"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -30,11 +30,6 @@ type Context any
 type RestServer[C Context] interface {
 	// Use to hide the Banner of web framework
 	HideBanner()
-
-	// Set Custom Logger
-	SetGlobalLogger(logger *zerolog.Logger)
-	// Return the current logger
-	GetGlobalLogger() *zerolog.Logger
 	// Disable HTTP2 , HTTP2 is enabled by default
 	DisableHTTP2()
 	//  Set Readtimeout
@@ -65,14 +60,6 @@ type RestServer[C Context] interface {
 type echoSV struct {
 	logger *zerolog.Logger
 	sv     *echo.Echo
-}
-
-func (e *echoSV) SetGlobalLogger(logger *zerolog.Logger) {
-	e.logger = logger
-}
-
-func (e *echoSV) GetGlobalLogger() *zerolog.Logger {
-	return e.logger
 }
 
 func (e *echoSV) DisableHTTP2() {

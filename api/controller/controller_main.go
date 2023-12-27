@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"net/http"
 	"{{{mytemplate}}}/translator"
 	"{{{mytemplate}}}/validator"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -27,7 +27,7 @@ func (m *Maincontroller) Hello(c echo.Context) error {
 
 	lang := c.Get("locale").(string)
 
-	err := m.Validator.ValidateRequest(lang, &user)
+	err := m.Validator.ValidateRequestAndTranslate(lang, &user)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]any{"error": err})
